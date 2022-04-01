@@ -1,27 +1,69 @@
 export default class SortableTable {
 
   element;
-  subElement;
+  subElements;
+  _sortOnClick = event => {
+    const { id, sortable, order } = event.target.closest('[data-sortable="true"]').dataset;
+    if (!sortable) {
+      return;
+    }
+    const reversDirection = direction => {
+      const directions = {
+        asc: 'desc',
+        desc: 'asc'
+      };
+      return directions[direction];
+    };
 
-  testEvent = event => {
-    console.log(event.target.closest('[data-sortable="true"]'));
-
-
+    // this.sorted.order = this.sorted?.id === id ? reversDirection(order) : 'asc';
+    this.sorted.order = reversDirection(order);
+    this.sorted.id = id;
+    this.sort(this.sorted.id, this.sorted.order);
   };
 
   constructor(headerConfig, {
     data = [],
     sorted = {}
-  } = {}) {
+  } = {}, isSortLocally = true) {
+    this.isSortLocally = isSortLocally;
     this.headerConfig = headerConfig;
     this.data = data;
+    this.sorted = sorted;
 
     this.render();
-    this.initEventListener();
+
+    this.subElements.header.addEventListener('pointerdown', this._sortOnClick, false);
+
+    this.sort(this.sorted.id, this.sorted.order);
   }
 
-  initEventListener() {
-    this.element.addEventListener('pointerdown', this.testEvent, false);
+  render() {
+    this.element = document.createElement('div');
+    this.element.innerHTML = this._getTable();
+    this.element = this.element.firstElementChild;
+
+    this.subElements = this._getSubElements();
+  }
+
+  _getSubElements() {
+    const result = {};
+    const elements = this.element.querySelectorAll('[data-element]');
+    for (const subElement of elements) {
+      const name = subElement.dataset.element;
+
+      result[name] = subElement;
+    }
+
+    return result;
+  }
+
+  _getTable() {
+    return `
+      <div class="sortable-table">
+        ${this._getTableHeader()}
+        ${this._getTableBody()}
+      </div>
+    `;
   }
 
   _getTableHeader() {
@@ -32,12 +74,11 @@ export default class SortableTable {
     `;
   }
 
-
   _getHeaderRow({id, title, sortable}) {
     return `
-      <div class="sortable-table__cell" id="${id}" data-sortable="${sortable}" data-order="asc">
+      <div class="sortable-table__cell" data-id="${id}" data-sortable="${sortable}" data-order="${this.sorted?.order ? this.sorted.order : 'asc'}">
         <span>${title}</span>
-        ${sortable ? this._addSortArrow() : ''}
+        ${ this.sorted?.id === id ? this._addSortArrow() : ''}
       </div>
     `;
   }
@@ -62,7 +103,7 @@ export default class SortableTable {
     return data.map(item => {
       return `
         <a href="/products/${item.id}" class="sortable-table__row">
-        ${this._getTableCell(item)}
+          ${this._getTableCell(item)}
         </a>
       `;
     });
@@ -72,19 +113,6 @@ export default class SortableTable {
     return this.headerConfig.map(({id, template}) => {
       return template ? template(item[id]) : `<div class="sortable-table__cell">${item[id]}</div>`;
     }).join('');
-  }
-
-  _getTable() {
-    return `
-      <div class="sortable-table">
-        ${this._getTableHeader()}
-        ${this._getTableBody()}
-      </div>
-    `;
-  }
-
-  sortClick(event) {
-
   }
 
   sort(field, direction) {
@@ -108,27 +136,8 @@ export default class SortableTable {
     this.update(sortData);
   }
 
-  render() {
-    this.element = document.createElement('div');
-    this.element.innerHTML = this._getTable();
-    this.element = this.element.firstElementChild;
-
-    this.subElements = this._getSubElements();
-  }
-
-  _getSubElements() {
-    const result = {};
-    const elements = this.element.querySelectorAll('[data-element]');
-    for (const subElement of elements) {
-      const name = subElement.dataset.element;
-
-      result[name] = subElement;
-    }
-
-    return result;
-  }
-
   update(newData = this.data) {
+    this.subElements.header.innerHTML = this.headerConfig.map((item) => this._getHeaderRow(item)).join('');
     this.subElements.body.innerHTML = this._getTableRows(newData).join('');
   }
 
