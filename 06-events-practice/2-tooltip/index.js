@@ -5,15 +5,15 @@ class Tooltip {
     const target = event.target.closest('[data-tooltip]');
     if (target) {
       const tooltipData = target.dataset.tooltip;
-      target.addEventListener('pointermove', this._tooltip);
+      target.addEventListener('pointermove', this._tooltipMove);
       this.render(tooltipData);
     }
   };
   _deactivateHandler = () => {
-    document.removeEventListener('pointermove', this._tooltip);
+    document.removeEventListener('pointermove', this._tooltipMove);
     this.remove();
   };
-  _tooltip = event => {
+  _tooltipMove = event => {
     const shift = 15;
     this.element.style.left = event.clientX + shift + 'px';
     this.element.style.top = event.clientY + shift + 'px';
@@ -51,9 +51,9 @@ class Tooltip {
   destroy() {
     document.removeEventListener('pointerover', this._activateHanler);
     document.removeEventListener('pointerout', this._deactivateHandler);
-    document.removeEventListener('pointermove', this._tooltip);
+    document.removeEventListener('pointermove', this._tooltipMove);
     this.remove();
-    this.element = '';
+    this.element = null;
   }
 }
 
